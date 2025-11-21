@@ -150,6 +150,15 @@ int main(void)
         }
         case Scene_Game:
         {
+            DrawLine(screen_width / 3, 0, screen_width / 3, screen_height,
+                     WHITE);
+            DrawLine(2 * screen_width / 3, 0, 2 * screen_width / 3,
+                     screen_height, WHITE);
+
+            DrawLine(0, screen_height / 3, screen_width, screen_height / 3,
+                     WHITE);
+            DrawLine(0, 2 * screen_height / 3, screen_width,
+                     2 * screen_height / 3, WHITE);
             break;
         }
         default:
