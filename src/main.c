@@ -229,6 +229,9 @@ int main(void)
         // Update
         ///////////////////////////////
         Vector2 mouse_pos = GetMousePosition();
+        const int m_x = (int)floorf(mouse_pos.x / (float)square_size);
+        const int m_y = (int)floorf(mouse_pos.y / (float)square_size);
+        const int m_i = m_y * 3 + m_x;
 
         switch (scene)
         {
@@ -272,13 +275,9 @@ int main(void)
                 IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON) ||
                 IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
             {
-                const int x = (int)floorf(mouse_pos.x / (float)square_size);
-                const int y = (int)floorf(mouse_pos.y / (float)square_size);
-                const int i = y * 3 + x;
-
-                if (grid[i] == Cell_Empty)
+                if (grid[m_i] == Cell_Empty)
                 {
-                    grid[y * 3 + x] = player_turn;
+                    grid[m_y * 3 + m_x] = player_turn;
 
                     if (grid_game_over(grid, player_turn) || grid_is_full(grid))
                     {
@@ -287,8 +286,7 @@ int main(void)
                     else
                     {
                         grid_update_with_minimax(grid, Cell_O);
-                        if (grid_game_over(grid, player_turn) ||
-                            grid_is_full(grid))
+                        if (grid_game_over(grid, Cell_O) || grid_is_full(grid))
                         {
                             scene = Scene_Menu;
                         }
@@ -328,6 +326,12 @@ int main(void)
                      WHITE);
             DrawLine(0, 2 * screen_height / 3, screen_width,
                      2 * screen_height / 3, WHITE);
+
+            if (grid[m_i] == Cell_Empty)
+            {
+                DrawRectangle(m_x * square_size, m_y * square_size, square_size,
+                              square_size, DARKBLUE);
+            }
 
             int x = 0, y = 0;
             for (size_t i = 0; i < NUM_CELLS; ++i, ++x)
