@@ -1,12 +1,22 @@
 #include "assert.h"
 #include "raylib.h"
 #include <stdio.h>
+#include <string.h>
+
+#define NUM_CELLS 9
 
 typedef enum
 {
-    Scene_Menu,
+    Scene_Menu = 0,
     Scene_Game,
 } Scene;
+
+typedef enum
+{
+    Cell_Empty = 0,
+    Cell_O,
+    Cell_X,
+} Cell;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Centered Text
@@ -71,6 +81,8 @@ int main(void)
     ///////////////////////////////
     // Initialize Game
     ///////////////////////////////
+    Cell grid[NUM_CELLS] = {0};
+    Cell player_turn;
 
     while (!WindowShouldClose())
     {
@@ -89,6 +101,13 @@ int main(void)
                     IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
                 {
                     scene = Scene_Game;
+
+                    for (size_t i = 0; i < NUM_CELLS; ++i)
+                    {
+                        grid[i] = Cell_Empty;
+                    }
+
+                    player_turn = Cell_X;
                 }
                 else
                 {
@@ -131,7 +150,6 @@ int main(void)
         }
         case Scene_Game:
         {
-            DrawText("Game Scene", 100, 100, 40, WHITE);
             break;
         }
         default:
