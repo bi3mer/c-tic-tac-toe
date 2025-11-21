@@ -84,6 +84,27 @@ int main(void)
     Cell grid[NUM_CELLS] = {0};
     Cell player_turn;
 
+    const int square_size = screen_width / 3;
+
+    RenderTexture2D texture_o = LoadRenderTexture(square_size, square_size);
+    BeginTextureMode(texture_o);
+    DrawCircle(square_size / 2, square_size / 2, square_size / 2.4, WHITE);
+    DrawCircle(square_size / 2, square_size / 2, square_size / 2.8, BLACK);
+    EndTextureMode();
+
+    RenderTexture2D texture_x = LoadRenderTexture(square_size, square_size);
+    BeginTextureMode(texture_x);
+    {
+        Vector2 start = {.x = 0, .y = 0};
+        Vector2 end = {.x = square_size, .y = square_size};
+        DrawLineEx(start, end, 12, WHITE);
+
+        start.x = square_size;
+        end.x = 0;
+        DrawLineEx(start, end, 12, WHITE);
+    }
+    EndTextureMode();
+
     while (!WindowShouldClose())
     {
         ///////////////////////////////
@@ -106,6 +127,9 @@ int main(void)
                     {
                         grid[i] = Cell_Empty;
                     }
+
+                    grid[0] = Cell_X;
+                    grid[5] = Cell_O;
 
                     player_turn = Cell_X;
                 }
@@ -159,6 +183,31 @@ int main(void)
                      WHITE);
             DrawLine(0, 2 * screen_height / 3, screen_width,
                      2 * screen_height / 3, WHITE);
+
+            int x = 0, y = 0;
+            for (size_t i = 0; i < NUM_CELLS; ++i, ++x)
+            {
+                if (x >= 3)
+                {
+                    ++y;
+                    x = 0;
+                }
+
+                switch (grid[i])
+                {
+                case Cell_O:
+                    DrawTexture(texture_o.texture, x * square_size,
+                                y * square_size, WHITE);
+                    break;
+                case Cell_X:
+                    DrawTexture(texture_x.texture, x * square_size,
+                                y * square_size, WHITE);
+                    break;
+                case Cell_Empty:
+                default:
+                    break;
+                }
+            }
             break;
         }
         default:
