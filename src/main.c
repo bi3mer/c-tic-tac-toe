@@ -66,6 +66,58 @@ static bool grid_game_over(Cell grid[NUM_CELLS], Cell player)
            (grid[2] == player && grid[5] == player && grid[8] == player);
 }
 
+static void grid_game_over_lines(Cell grid[NUM_CELLS], Cell player,
+                                 int screen_size, Vector2 *line_start,
+                                 Vector2 *line_end)
+{
+    const int square_size = screen_size / 3;
+
+    if (grid[0] == player && grid[4] == player && grid[8] == player)
+    {
+        line_start->x = 0;
+        line_start->y = 0;
+        line_end->x = screen_size;
+        line_end->y = screen_size;
+        return;
+    }
+
+    if (grid[2] == player && grid[4] == player && grid[6] == player)
+    {
+        line_start->x = screen_size;
+        line_start->y = 0;
+        line_end->x = 0;
+        line_end->y = screen_size;
+        return;
+    }
+
+    for (int row = 0; row < 3; row++)
+    {
+        int base = row * 3;
+        if (grid[base] == player && grid[base + 1] == player &&
+            grid[base + 2] == player)
+        {
+            line_start->x = 0;
+            line_start->y = row * square_size + square_size / 2;
+            line_end->x = screen_size;
+            line_end->y = row * square_size + square_size / 2;
+            return;
+        }
+    }
+
+    for (int col = 0; col < 3; col++)
+    {
+        if (grid[col] == player && grid[col + 3] == player &&
+            grid[col + 6] == player)
+        {
+            line_start->x = col * square_size + square_size / 2;
+            line_start->y = 0;
+            line_end->x = col * square_size + square_size / 2;
+            line_end->y = screen_size;
+            return;
+        }
+    }
+}
+
 static bool grid_is_full(Cell grid[NUM_CELLS])
 {
     for (size_t i = 0; i < NUM_CELLS; ++i)
@@ -199,6 +251,9 @@ int main(void)
     ///////////////////////////////
     // Initialize Game
     ///////////////////////////////
+    int game_over_frame_count;
+    Vector2 game_over_line_start;
+    Vector2 game_over_line_end;
     Cell grid[NUM_CELLS] = {0};
     Cell player_turn;
 
@@ -223,6 +278,9 @@ int main(void)
     }
     EndTextureMode();
 
+    ///////////////////////////////////////////////////////////////////////////
+    //                               Game Loop                               //
+    ///////////////////////////////////////////////////////////////////////////
     while (!WindowShouldClose())
     {
         ///////////////////////////////
@@ -243,6 +301,7 @@ int main(void)
                     IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE) ||
                     IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
                 {
+                    game_over_frame_count = -1;
                     scene = Scene_Game;
 
                     for (size_t i = 0; i < NUM_CELLS; ++i)
@@ -266,29 +325,55 @@ int main(void)
         }
         case Scene_Game:
         {
-            if (IsKeyPressed(KEY_Q))
+            if (IsKeyPressed(KEY_Q) || IsKeyPressed(KEY_SPACE) ||
+                IsKeyPressed(KEY_ENTER))
             {
                 scene = Scene_Menu;
             }
 
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) ||
-                IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON) ||
-                IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            if (game_over_frame_count >= 0)
+            {
+                if (game_over_frame_count == 100)
+                {
+                    scene = Scene_Menu;
+                }
+
+                ++game_over_frame_count;
+            }
+            else if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) ||
+                     IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON) ||
+                     IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
             {
                 if (grid[m_i] == Cell_Empty)
                 {
                     grid[m_y * 3 + m_x] = player_turn;
 
-                    if (grid_game_over(grid, player_turn) || grid_is_full(grid))
+                    if (grid_game_over(grid, player_turn))
                     {
-                        scene = Scene_Menu;
+                        game_over_frame_count = 0;
+                        grid_game_over_lines(grid, player_turn, screen_width,
+                                             &game_over_line_start,
+                                             &game_over_line_end);
+                    }
+                    else if (grid_is_full(grid))
+                    {
+                        game_over_frame_count = 0;
+                        player_turn = Cell_Empty;
                     }
                     else
                     {
                         grid_update_with_minimax(grid, Cell_O);
-                        if (grid_game_over(grid, Cell_O) || grid_is_full(grid))
+                        if (grid_game_over(grid, Cell_O))
                         {
-                            scene = Scene_Menu;
+                            game_over_frame_count = 0;
+                            grid_game_over_lines(grid, Cell_O, screen_width,
+                                                 &game_over_line_start,
+                                                 &game_over_line_end);
+                        }
+                        else if (grid_is_full(grid))
+                        {
+                            game_over_frame_count = 0;
+                            player_turn = Cell_Empty;
                         }
                     }
                 }
@@ -327,7 +412,7 @@ int main(void)
             DrawLine(0, 2 * screen_height / 3, screen_width,
                      2 * screen_height / 3, WHITE);
 
-            if (grid[m_i] == Cell_Empty)
+            if (game_over_frame_count < 0 && grid[m_i] == Cell_Empty)
             {
                 DrawRectangle(m_x * square_size, m_y * square_size, square_size,
                               square_size, DARKBLUE);
@@ -356,6 +441,11 @@ int main(void)
                 default:
                     break;
                 }
+            }
+
+            if (game_over_frame_count >= 0 && player_turn != Cell_Empty)
+            {
+                DrawLineEx(game_over_line_start, game_over_line_end, 10, RED);
             }
             break;
         }
