@@ -1,9 +1,13 @@
 #include "assert.h"
 #include "raylib.h"
+#include "stdbool.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
 #define NUM_CELLS 9
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef enum
 {
@@ -17,6 +21,8 @@ typedef enum
     Cell_O,
     Cell_X,
 } Cell;
+
+#define switch_player(c) (c == Cell_O ? Cell_X : Cell_O)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Centered Text
@@ -44,6 +50,118 @@ static void centered_text_init(Centered_Text *ct, char *text, int font_size,
 static void centered_text_render(Centered_Text *ct)
 {
     DrawText(ct->text, ct->_x, ct->y, ct->font_size, ct->color);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Board functions
+static bool grid_game_over(Cell grid[NUM_CELLS], Cell player)
+{
+    return (grid[0] == player && grid[4] == player && grid[8] == player) ||
+           (grid[2] == player && grid[4] == player && grid[6] == player) ||
+           (grid[0] == player && grid[1] == player && grid[2] == player) ||
+           (grid[3] == player && grid[4] == player && grid[5] == player) ||
+           (grid[6] == player && grid[7] == player && grid[8] == player) ||
+           (grid[0] == player && grid[3] == player && grid[6] == player) ||
+           (grid[1] == player && grid[4] == player && grid[7] == player) ||
+           (grid[2] == player && grid[5] == player && grid[8] == player);
+}
+
+static bool grid_is_full(Cell grid[NUM_CELLS])
+{
+    for (size_t i = 0; i < NUM_CELLS; ++i)
+    {
+        if (grid[i] == Cell_Empty)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static int grid_empty_indexes(Cell grid[NUM_CELLS], int indexes[NUM_CELLS])
+{
+    int num_indexes = 0;
+    for (int i = 0; i < NUM_CELLS; ++i)
+    {
+        if (grid[i] == Cell_Empty)
+        {
+            indexes[num_indexes] = i;
+            ++num_indexes;
+        }
+    }
+
+    return num_indexes;
+}
+
+static int grid_minimax(Cell grid[NUM_CELLS], Cell player)
+{
+    Cell opponent = switch_player(player);
+    if (grid_game_over(grid, opponent))
+    {
+        return opponent == Cell_O ? 1 : -1;
+    }
+
+    int score;
+    int indexes[NUM_CELLS];
+    const int num_indexes = grid_empty_indexes(grid, indexes);
+
+    if (num_indexes == 0)
+    {
+        return 0;
+    }
+
+    if (player == Cell_O)
+    {
+        score = -10000;
+        for (int i = 0; i < num_indexes; ++i)
+        {
+            grid[indexes[i]] = player;
+            score = MAX(score, grid_minimax(grid, switch_player(player)));
+            grid[indexes[i]] = Cell_Empty;
+        }
+    }
+    else
+    {
+        score = 100000;
+        for (int i = 0; i < num_indexes; ++i)
+        {
+            grid[indexes[i]] = player;
+            score = MIN(score, grid_minimax(grid, switch_player(player)));
+            grid[indexes[i]] = Cell_Empty;
+        }
+    }
+
+    return score;
+}
+
+static void grid_update_with_minimax(Cell grid[NUM_CELLS], Cell player)
+{
+    int indexes[NUM_CELLS];
+    const int num_indexes = grid_empty_indexes(grid, indexes);
+
+    int best_score = -100000;
+    int best_index = 0;
+    for (int i = 0; i < num_indexes; ++i)
+    {
+        grid[indexes[i]] = player;
+
+        if (grid_game_over(grid, player))
+        {
+            return;
+        }
+
+        int score = grid_minimax(grid, switch_player(player));
+        if (score > best_score)
+        {
+            best_score = score;
+            best_index = i;
+        }
+
+        grid[indexes[i]] = Cell_Empty;
+    }
+
+    grid[indexes[best_index]] = player;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,11 +228,12 @@ int main(void)
         ///////////////////////////////
         // Update
         ///////////////////////////////
+        Vector2 mouse_pos = GetMousePosition();
+
         switch (scene)
         {
         case Scene_Menu:
         {
-            Vector2 mouse_pos = GetMousePosition();
             if (CheckCollisionPointRec(mouse_pos, menu_start_button))
             {
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) ||
@@ -127,9 +246,6 @@ int main(void)
                     {
                         grid[i] = Cell_Empty;
                     }
-
-                    grid[0] = Cell_X;
-                    grid[5] = Cell_O;
 
                     player_turn = Cell_X;
                 }
@@ -147,10 +263,39 @@ int main(void)
         }
         case Scene_Game:
         {
-            if (IsKeyPressed(KEY_ENTER))
+            if (IsKeyPressed(KEY_Q))
             {
                 scene = Scene_Menu;
             }
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) ||
+                IsMouseButtonPressed(MOUSE_MIDDLE_BUTTON) ||
+                IsMouseButtonPressed(MOUSE_RIGHT_BUTTON))
+            {
+                const int x = (int)floorf(mouse_pos.x / (float)square_size);
+                const int y = (int)floorf(mouse_pos.y / (float)square_size);
+                const int i = y * 3 + x;
+
+                if (grid[i] == Cell_Empty)
+                {
+                    grid[y * 3 + x] = player_turn;
+
+                    if (grid_game_over(grid, player_turn) || grid_is_full(grid))
+                    {
+                        scene = Scene_Menu;
+                    }
+                    else
+                    {
+                        grid_update_with_minimax(grid, Cell_O);
+                        if (grid_game_over(grid, player_turn) ||
+                            grid_is_full(grid))
+                        {
+                            scene = Scene_Menu;
+                        }
+                    }
+                }
+            }
+
             break;
         }
         default:
@@ -217,6 +362,8 @@ int main(void)
         EndDrawing();
     }
 
+    UnloadRenderTexture(texture_o);
+    UnloadRenderTexture(texture_x);
     CloseWindow();
 
     return 0;
