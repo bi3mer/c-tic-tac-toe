@@ -32,14 +32,20 @@ jobs:
     
     - name: Download Raylib (Linux)
       if: matrix.os == 'ubuntu-latest'
+      env:
+        PYTHONIOENCODING: utf-8
       run: python3 build_scripts/download_raylib.py --linux
     
     - name: Download Raylib (Mac)
       if: matrix.os == 'macos-latest'
+      env:
+        PYTHONIOENCODING: utf-8
       run: python3 build_scripts/download_raylib.py --mac
     
     - name: Download Raylib (Windows)
       if: matrix.os == 'windows-latest'
+      env:
+        PYTHONIOENCODING: utf-8
       run: python3 build_scripts/download_raylib.py --windows
     
     - name: Build
