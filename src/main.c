@@ -412,7 +412,8 @@ int main(void)
             DrawLine(0, 2 * screen_height / 3, screen_width,
                      2 * screen_height / 3, WHITE);
 
-            if (game_over_frame_count < 0 && grid[m_i] == Cell_Empty)
+            if (game_over_frame_count < 0 && m_i < NUM_CELLS &&
+                grid[m_i] == Cell_Empty)
             {
                 DrawRectangle(m_x * square_size, m_y * square_size, square_size,
                               square_size, DARKBLUE);
