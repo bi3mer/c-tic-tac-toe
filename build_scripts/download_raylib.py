@@ -66,7 +66,7 @@ def setup_linux():
     print("✓ Linux libraries installed")
 
 def setup_windows():
-    url = f"https://github.com/raysan5/raylib/releases/download/{RAYLIB_VERSION}/raylib-{RAYLIB_VERSION}_win64_mingw-w64.zip"
+    url = f"https://github.com/raysan5/raylib/releases/download/{RAYLIB_VERSION}/raylib-{RAYLIB_VERSION}_win64_msvc16.zip"
     archive = "raylib_windows.zip"
 
     download_file(url, archive)
@@ -74,15 +74,16 @@ def setup_windows():
     with zipfile.ZipFile(archive, "r") as zip_ref:
         zip_ref.extractall()
 
-    src_dir = Path(f"raylib-{RAYLIB_VERSION}_win64_mingw-w64")
+    src_dir = Path(f"raylib-{RAYLIB_VERSION}_win64_msvc16")
     if not src_dir.exists():
-        src_dir = Path("raylib-5.5_win64_mingw-w64")
+        src_dir = Path("raylib-5.5_win64_msvc16")
 
     for header in (src_dir / "include").glob("*.h"):
         shutil.copy2(header, RAYLIB_DIR / "include")
 
-    shutil.copy2(src_dir / "lib" / "libraylib.a", RAYLIB_DIR / "lib")
-    shutil.copy2(src_dir / "lib" / "raylib.dll", RAYLIB_DIR / "lib")
+    # MSVC version has raylib.lib and raylib.dll
+    shutil.copy2(src_dir / "lib" / "raylib.lib", RAYLIB_DIR / "lib")
+    shutil.copy2(src_dir / "bin" / "raylib.dll", RAYLIB_DIR / "lib")  # Note: dll might be in bin/
 
     os.remove(archive)
     shutil.rmtree(src_dir)
