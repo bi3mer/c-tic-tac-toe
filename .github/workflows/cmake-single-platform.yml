@@ -46,28 +46,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       env:
         PYTHONIOENCODING: utf-8
-      run: |
-        python3 build_scripts/download_raylib.py --windows || true
-        echo "Checking what was extracted:"
-        ls -la raylib-*/ || true
-        ls -la raylib-*/lib/ || true
-        ls -la raylib-*/bin/ || true
-    
-    - name: Debug - Check raylib files (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        echo "Current directory:"
-        pwd
-        echo ""
-        echo "Contents of lib/raylib:"
-        ls -la lib/raylib/
-        echo ""
-        echo "Contents of lib/raylib/lib:"
-        ls -la lib/raylib/lib/
-        echo ""
-        echo "Looking for .lib files:"
-        find . -name "*.lib" -type f 2>/dev/null || echo "No .lib files found"
-      shell: bash
+      run: python3 build_scripts/download_raylib.py --windows
     
     - name: Build
       run: |
@@ -76,8 +55,52 @@ jobs:
         cmake ..
         cmake --build .
     
+    - name: Package executable
+      run: |
+        cd build
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          # Find and package .exe and .dll files
+          7z a -tzip "../game-Windows.zip" *.exe ../lib/raylib/lib/*.dll 2>/dev/null || 7z a -tzip "../game-Windows.zip" *.exe
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          # Package the executable
+          zip -r "../game-macOS.zip" project 2>/dev/null || zip -r "../game-macOS.zip" *
+        else
+          # Linux
+          tar -czf "../game-Linux.tar.gz" project 2>/dev/null || tar -czf "../game-Linux.tar.gz" *
+        fi
+      shell: bash
+    
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: game-${{ runner.os }}
-        path: build/*
+        path: game-*.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Display structure of downloaded files
+      run: ls -R artifacts
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
+        draft: false
+        prerelease: false
+        files: |
+          artifacts/game-Linux/game-Linux.tar.gz
+          artifacts/game-macOS/game-macOS.zip
+          artifacts/game-Windows/game-Windows.zip
