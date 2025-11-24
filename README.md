@@ -12,3 +12,10 @@ cd c-tic-tac-toe
 zig build
 ./zig-out/tic-tac-toe
 ```
+
+## Release build
+
+```bash
+zig build -Doptimize=ReleaseFast                         # mac build
+zig build -Dtarget=x86_64-windows -Doptimize=ReleaseFast # Windows Build
+```
