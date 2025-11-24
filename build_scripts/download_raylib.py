@@ -83,7 +83,7 @@ def setup_windows():
 
     # MSVC version has raylib.lib and raylib.dll
     shutil.copy2(src_dir / "lib" / "raylib.lib", RAYLIB_DIR / "lib")
-    shutil.copy2(src_dir / "bin" / "raylib.dll", RAYLIB_DIR / "lib")  # Note: dll might be in bin/
+    shutil.copy2(src_dir / "lib" / "raylib.dll", RAYLIB_DIR / "lib")
 
     os.remove(archive)
     shutil.rmtree(src_dir)
