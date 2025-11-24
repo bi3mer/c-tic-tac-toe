@@ -1,0 +1,49 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    
+    - name: Download Raylib (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: python3 build_scripts/download_raylib.py --linux
+    
+    - name: Download Raylib (Mac)
+      if: matrix.os == 'macos-latest'
+      run: python3 build_scripts/download_raylib.py --mac
+    
+    - name: Download Raylib (Windows)
+      if: matrix.os == 'windows-latest'
+      run: python3 build_scripts/download_raylib.py --windows
+    
+    - name: Build
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        cmake --build .
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: game-${{ runner.os }}
+        path: build/*
