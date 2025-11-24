@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) void {
             if (entry.kind == .file and std.mem.endsWith(u8, entry.name, ".c")) {
                 exe.root_module.addCSourceFile(.{
                     .file = b.path(b.fmt("src/{s}", .{entry.name})),
-                    .flags = &.{"-std=c99"},
+                    .flags = &.{ "-std=c99", "-Wall", "-Wextra", "-pedantic" },
                 });
             }
         }
