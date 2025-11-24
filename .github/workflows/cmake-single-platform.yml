@@ -46,7 +46,12 @@ jobs:
       if: matrix.os == 'windows-latest'
       env:
         PYTHONIOENCODING: utf-8
-      run: python3 build_scripts/download_raylib.py --windows
+      run: |
+        python3 build_scripts/download_raylib.py --windows || true
+        echo "Checking what was extracted:"
+        ls -la raylib-*/ || true
+        ls -la raylib-*/lib/ || true
+        ls -la raylib-*/bin/ || true
     
     - name: Debug - Check raylib files (Windows)
       if: matrix.os == 'windows-latest'
